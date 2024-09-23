@@ -1,8 +1,9 @@
 # snr: Search and Replace Script
 
 This script allows for searching and replacing text within files using regular expressions. It supports both case-sensitive and case-insensitive searches and can read from standard input or from files in a specified directory.
+It is meant for project-wide search and replace operations with the advantage of a preview of the replacements in question.
 
-##Prerequisites
+## Prerequisites ##
 - Ensure you have `ripgrep` installed on your system. You can find it at [ripgrep GitHub Repository](https://github.com/BurntSushi/ripgrep).
 
 ## Usage ##
