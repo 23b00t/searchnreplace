@@ -26,17 +26,17 @@ rg -l --max-depth 1 "search_term" | snr search_term replace_with
 ## Examples ##
 1. Replace "old" with "new" in files under the current directory:
 ``` bash
-./snr old new
+snr old new
 ```
 
 2. Perform a case-insensitive replacement of "hello" with "hi" in files under the `documents` directory:
 ``` bash
-./snr -i hello hi -p documents
+snr -ip hello hi documents
 ```
 
 3. Display help information:
 ``` bash
-./snr -h
+snr -h
 ```
 
 ## Note ##
