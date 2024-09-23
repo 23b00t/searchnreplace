@@ -5,30 +5,37 @@ search=''
 replace=''
 dir=''
 insensitive=0
+rg_opts_input=''
 
 print_usage() {
         echo "Usage: snr [Options] search_expression replace_expression [path]"
         echo "-p option expects a path to be specified for recursive search as last argument"
         echo "-i for case-insensitive search"
+        echo "-o for rg options, eg. snr -po -. search_term replace_with ./ (to search hidden files too)"
         echo "Without -p snr reads from SdtIn"
         echo "Search/Replace using regex; spaces and other special characters should be in quotes \" \""
         exit 0
 }
 
-while getopts 'iph' flag; do
+while getopts 'ipo:h' flag; do
     case "${flag}" in
         i) insensitive=1 ;;
-        p) dir="$4" ;;
+        p) dir="${!#}" ;;
         h) print_usage ;;
+        o) rg_opts_input="${OPTARG}" ;;
         *) print_usage
            exit 1 ;;
     esac
 done
 
+
 # Check if the first argument starts with a hyphen (-) or double hyphen (--).
 if [[ "$1" != -* ]]; then
     search="$1"
     replace="$2"
+elif [[ "$1" =~ -.*[o] ]]; then
+    search="$3"
+    replace="$4"
 else
     search="$2"
     replace="$3"
@@ -43,7 +50,8 @@ NC='\033[0m'        # No color
 # If a directory is provided with -p, use ripgrep (rg) to search for files containing the search term
 if [[ -n "$dir" ]]; then
     # Set options for rg to perform the search for matching files
-    rg_opts="-l -."
+
+    rg_opts="-l $rg_opts_input"
     [[ "$insensitive" == 1 ]] && rg_opts="-i $rg_opts"
     # Store the list of file paths matching the search term in the specified directory
     readarray -t paths < <(rg $rg_opts "$search" "$dir")
@@ -52,6 +60,7 @@ else
     readarray -t paths
 fi
 
+echo $rg_opts
 # Iterate over the array of file paths
 for path in "${paths[@]}"; do
     # Convert relative path to absolute path using realpath
@@ -62,7 +71,8 @@ for path in "${paths[@]}"; do
     
     # Set options for ripgrep: -n to display line numbers, --no-heading to suppress file headers,
     # --color=always to color matches, and -i for case-insensitive search if enabled
-    rg_opts="-n --no-heading --color=always -."
+    rg_opts="-n --no-heading --color=always $rg_opts_input"
+
     [[ "$insensitive" == 1 ]] && rg_opts="-i $rg_opts"
 
     # Run ripgrep on the file and use awk to highlight and replace matched terms

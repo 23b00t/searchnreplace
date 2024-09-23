@@ -14,6 +14,7 @@ snr [Options] search_expression replace_expression [path]
 ## Options ##
 - `-i`: Perform a case-insensitive search.
 - `-p`: Specify a path for a recursive search. The path must be the last argument.
+- `-o`: for rg options, e.g. snr -po -. search_term replace_with ./ (to search hidden files too)
 - `-h`: Display help information about usage.
 
 ## Behavior ##
@@ -35,7 +36,12 @@ snr old new
 snr -ip hello hi documents
 ```
 
-3. Display help information:
+3. Pass Options to rg to search in hidden files:
+``` bash
+snr -po -. hello hi ./
+```
+
+4. Display help information:
 ``` bash
 snr -h
 ```
@@ -43,6 +49,7 @@ snr -h
 ## Note ##
 - The script prompts for confirmation before making replacements in each file.
 - All replacements will be made in-place, meaning the original files will be modified.
+- Problems with passing complex regex's (e.g. \(word\).* \1)as they are treated differently by rg, sed and awk.
 
 ## License ##
 This script is released under the MIT License.
