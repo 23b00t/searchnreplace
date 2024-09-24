@@ -7,6 +7,15 @@ dir=''
 insensitive=0
 rg_opts_input=''
 
+# ANSI escape sequences for coloring the output
+GREEN='\033[0;92m'  # Green color
+NC='\033[0m'        # No color
+# Double escaped for usage in sed
+SED_GREEN='\\033[0;32m'
+RED='\\033[0;91m'
+SED_NC='\\033[0m'
+STRIKE='\\033[9m'    # Strikethrough effect
+
 print_usage() {
         echo "Usage: snr [Options] search_expression replace_expression [path]"
         echo "-p option expects a path to be specified for recursive search as last argument"
@@ -41,11 +50,7 @@ else
     replace="$3"
 fi
 
-# ANSI escape sequences for coloring the output
-GREEN='\033[0;32m'  # Green color
-STRIKE='\033[9m'    # Strikethrough effect
-NC='\033[0m'        # No color
-
+printf "$search $replace\n"
 
 # If a directory is provided with -p, use ripgrep (rg) to search for files containing the search term
 if [[ -n "$dir" ]]; then
@@ -60,7 +65,6 @@ else
     readarray -t paths
 fi
 
-echo $rg_opts
 # Iterate over the array of file paths
 for path in "${paths[@]}"; do
     # Convert relative path to absolute path using realpath
@@ -69,21 +73,12 @@ for path in "${paths[@]}"; do
     echo "---------------------------------------------------------------------------------------------------"
     printf "${GREEN}$abs_path${NC}:\n"
     
-    # Set options for ripgrep: -n to display line numbers, --no-heading to suppress file headers,
-    # --color=always to color matches, and -i for case-insensitive search if enabled
-    rg_opts="-n --no-heading --color=always $rg_opts_input"
+    # sed command to perform the replacement: Add -I option for case-insensitive if needed
+    sed_opts="gp"
+    [[ "$insensitive" == 1 ]] && sed_opts="I $sed_opts"
 
-    [[ "$insensitive" == 1 ]] && rg_opts="-i $rg_opts"
-
-    # Run ripgrep on the file and use awk to highlight and replace matched terms
-    rg $rg_opts "$search" "$abs_path" | awk -v search="$search" -v replace="$replace" \
-    -v green="$GREEN" -v strike="$STRIKE" -v nc="$NC" '
-    BEGIN { IGNORECASE = 1 }
-    {
-        # gsub replaces the search term with a strikethrough version followed by the replacement in green
-        gsub(search, strike "&" nc " " green replace nc);
-        print;
-    }'
+    # Use echo -e to have colors; awk for line numbers; simulated replacement with sed
+    echo -e "$(awk '{print NR ": " $0}' $path | sed -rn "s/$search/$RED$STRIKE&$SED_NC $SED_GREEN$replace$SED_NC/$sed_opts")"
     
     echo "---------------------------------------------------------------------------------------------------"
     
@@ -92,11 +87,11 @@ for path in "${paths[@]}"; do
     read -n 1 input </dev/tty
 
     if [[ "$input" =~ ^[yY] ]]; then
-        # sed command to perform the replacement: Add -I option for case-insensitive if needed
-        sed_opts="g"
-        [[ "$insensitive" == 1 ]] && sed_opts="I $sed_opts"
+        # Pattern Substitution to remove the p option
+        sed_opts="${sed_opts//p/}"
 
-        sed -i "s/$search/$replace/$sed_opts" "$path"
+        # Perform the Substitution in place
+        sed -ri "s/$search/$replace/$sed_opts" "$path"
     elif [[ "$input" =~ ^[nN] ]]; then
         # If the user selects no, skip to the next file
         printf "\n\n"
