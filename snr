@@ -3,7 +3,7 @@
 # Init variables
 search=''
 replace=''
-dir=''
+dir=0
 insensitive=0
 rg_opts_input=''
 
@@ -17,19 +17,19 @@ SED_NC='\\033[0m'
 STRIKE='\\033[9m'    # Strikethrough effect
 
 print_usage() {
-        echo "Usage: snr [Options] search_expression replace_expression [path]"
-        echo "-p option expects a path to be specified for recursive search as last argument"
+        echo "Usage: snr [Options] search_expression replace_expression [./path]"
+        echo "If you ommit the search path, ./ is the default"
+        echo "-r reads filenames from stdin (instead of searching ./path)" 
         echo "-i for case-insensitive search"
         echo "-o for rg options, eg. snr -po -. search_term replace_with ./ (to search hidden files too)"
-        echo "Without -p snr reads from SdtIn"
         echo "Search/Replace using regex; spaces and other special characters should be in quotes \" \""
         exit 0
 }
 
-while getopts 'ipo:h' flag; do
+while getopts 'iro:h' flag; do
     case "${flag}" in
         i) insensitive=1 ;;
-        p) dir="${!#}" ;;
+        r) dir=1 ;;
         h) print_usage ;;
         o) rg_opts_input="${OPTARG}" ;;
         *) print_usage
@@ -53,13 +53,19 @@ fi
 printf "$search $replace\n"
 
 # If a directory is provided with -p, use ripgrep (rg) to search for files containing the search term
-if [[ -n "$dir" ]]; then
+if [[ "$dir" == 0 ]]; then
     # Set options for rg to perform the search for matching files
-
     rg_opts="-l $rg_opts_input"
     [[ "$insensitive" == 1 ]] && rg_opts="-i $rg_opts"
+
+    # Set searchpath
+    search_path="${!#}"
+    # Check if a valid search path was provided otherwise use ./
+    if [[ ! -d "$search_path" ]]; then
+        search_path="./"
+    fi
     # Store the list of file paths matching the search term in the specified directory
-    readarray -t paths < <(rg $rg_opts "$search" "$dir")
+    readarray -t paths < <(rg $rg_opts "$search" $search_path)
 else
     # Otherwise, read from stdin and store paths in an array
     readarray -t paths

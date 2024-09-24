@@ -49,7 +49,6 @@ snr -h
 ## Note ##
 - The script prompts for confirmation before making replacements in each file.
 - All replacements will be made in-place, meaning the original files will be modified.
-- Problems with passing complex regex's (e.g. \(word\).* \1)as they are treated differently by rg, sed and awk.
 
 ## License ##
 This script is released under the MIT License.
