@@ -17,13 +17,16 @@ SED_NC='\\033[0m'
 STRIKE='\\033[9m'    # Strikethrough effect
 
 print_usage() {
-        echo "Usage: snr [Options] search_expression replace_expression [./path]"
-        echo "If you ommit the search path, ./ is the default"
-        echo "-r reads filenames from stdin (instead of searching ./path)" 
-        echo "-i for case-insensitive search"
-        echo "-o for rg options, eg. snr -po -. search_term replace_with ./ (to search hidden files too)"
-        echo "Search/Replace using regex; spaces and other special characters should be in quotes \" \""
-        exit 0
+    echo " Usage: snr [Options] search_expression replace_expression [./path]"
+    echo " If you ommit the search path, ./ is the default"
+    echo " Provide options with one hyphen, 'o' must be the last, e.g. -iro"
+    echo 
+    echo -e "  -r \treads filenames from stdin (instead of searching ./path)" 
+    echo -e "  -i \tfor case-insensitive search"
+    echo -e "  -o \tfor rg options, eg. snr -po -. search_term replace_with ./ (to search hidden files too)"
+    echo 
+    echo " Search/Replace using extended regex; use quotes, e.g. snr '(username: ).*' '\1Daniel'"
+    exit 0
 }
 
 while getopts 'iro:h' flag; do
@@ -38,7 +41,7 @@ while getopts 'iro:h' flag; do
 done
 
 
-# Check if the first argument starts with a hyphen (-) or double hyphen (--).
+# Set $search and $replace based on the provided opts
 if [[ "$1" != -* ]]; then
     search="$1"
     replace="$2"
@@ -50,9 +53,10 @@ else
     replace="$3"
 fi
 
-printf "$search $replace\n"
+# [debug:]
+# printf "$search $replace\n"
 
-# If a directory is provided with -p, use ripgrep (rg) to search for files containing the search term
+# If a directory is provided with, use ripgrep (rg) to search for files containing the search term
 if [[ "$dir" == 0 ]]; then
     # Set options for rg to perform the search for matching files
     rg_opts="-l $rg_opts_input"
@@ -67,14 +71,14 @@ if [[ "$dir" == 0 ]]; then
     # Store the list of file paths matching the search term in the specified directory
     readarray -t paths < <(rg $rg_opts "$search" $search_path)
 else
-    # Otherwise, read from stdin and store paths in an array
+    # Otherwise (-r option), read from stdin and store paths in an array
     readarray -t paths
 fi
 
 # Iterate over the array of file paths
-for path in "${paths[@]}"; do
+for file in "${paths[@]}"; do
     # Convert relative path to absolute path using realpath
-    abs_path=$(realpath "$path")
+    abs_path=$(realpath "$file")
 
     echo "---------------------------------------------------------------------------------------------------"
     printf "${GREEN}$abs_path${NC}:\n"
@@ -84,12 +88,12 @@ for path in "${paths[@]}"; do
     [[ "$insensitive" == 1 ]] && sed_opts="I $sed_opts"
 
     # Use echo -e to have colors; awk for line numbers; simulated replacement with sed
-    echo -e "$(awk '{print NR ": " $0}' $path | sed -rn "s/$search/$RED$STRIKE&$SED_NC $SED_GREEN$replace$SED_NC/$sed_opts")"
+    echo -e "$(awk '{print NR ": " $0}' $file | sed -rn "s/$search/$RED$STRIKE&$SED_NC $SED_GREEN$replace$SED_NC/$sed_opts")"
     
     echo "---------------------------------------------------------------------------------------------------"
     
     # Prompt the user for input on whether to replace all occurrences in the file
-    echo -n "Replace all in $path? y(es), n(o): " 
+    echo -n "Replace all in $file? y(es), n(o): " 
     read -n 1 input </dev/tty
 
     if [[ "$input" =~ ^[yY] ]]; then
@@ -97,7 +101,7 @@ for path in "${paths[@]}"; do
         sed_opts="${sed_opts//p/}"
 
         # Perform the Substitution in place
-        sed -ri "s/$search/$replace/$sed_opts" "$path"
+        sed -ri "s/$search/$replace/$sed_opts" "$file"
     elif [[ "$input" =~ ^[nN] ]]; then
         # If the user selects no, skip to the next file
         printf "\n\n"
@@ -106,7 +110,7 @@ for path in "${paths[@]}"; do
         # If the input is invalid, ask the user again
         echo 
         printf "Invalid input! Yy/Nn: \n"
-        echo -n "Replace all in $path? y(es), n(o): " 
+        echo -n "Replace all in $file? y(es), n(o): " 
         read -n 1 input </dev/tty
     fi
     printf "\n\n"
