@@ -88,7 +88,7 @@ for file in "${paths[@]}"; do
     [[ "$insensitive" == 1 ]] && sed_opts="I $sed_opts"
 
     # Use echo -e to have colors; awk for line numbers; simulated replacement with sed
-    echo -e "$(awk '{print NR ": " $0}' $file | sed -rn "s/$search/$RED$STRIKE&$SED_NC $SED_GREEN$replace$SED_NC/$sed_opts")"
+    echo -e "$(awk '{print NR ": " $0}' $file | sed -rn "s%$search%$RED$STRIKE&$SED_NC $SED_GREEN$replace$SED_NC%$sed_opts")"
     
     echo "---------------------------------------------------------------------------------------------------"
     
@@ -101,7 +101,7 @@ for file in "${paths[@]}"; do
         sed_opts="${sed_opts//p/}"
 
         # Perform the Substitution in place
-        sed -ri "s/$search/$replace/$sed_opts" "$file"
+        sed -ri "s%$search%$replace%$sed_opts" "$file"
     elif [[ "$input" =~ ^[nN] ]]; then
         # If the user selects no, skip to the next file
         printf "\n\n"
